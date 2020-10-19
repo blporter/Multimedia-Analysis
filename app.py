@@ -3,6 +3,7 @@ import logging
 import csv
 import tweepy
 import os
+import time
 
 consumer_key = os.environ["TWITTER_KEY"]
 consumer_secret = os.environ["TWITTER_SECRET"]
@@ -15,11 +16,14 @@ file_exists = os.path.isfile(csv_path)
 
 
 class StreamListener(tweepy.StreamListener):
-    def __init__(self):
+    def __init__(self, end_time):
         super(StreamListener, self).__init__()
-        self.exit = False
+        self.end_time = end_time
 
     def on_status(self, status):
+        if time.time() > self.end_time:
+            return False
+
         if status.lang == 'en' and 'RT'.upper() not in status.text:
             stat = status.text
             stat = stat.replace('\n', '')
@@ -46,14 +50,12 @@ class StreamListener(tweepy.StreamListener):
         if status_code == 420:
             date = "Error code 420 at:" + str(datetime.datetime.now())
             logging.info(date)
-            logging.info("Sleeping for 30 minutes")
-            self.exit = True
+        return False
 
 
 def write_header():
-    with open(csv_path, 'w') as csv_file:
+    with open(csv_path, 'a') as csv_file:
         writer = csv.DictWriter(csv_file, delimiter=',', fieldnames=fieldnames)
-
         # file doesn't exist yet, write a header
         if not file_exists:
             writer.writeheader()
@@ -64,13 +66,16 @@ def app():
     auth.access_token = access_token
     auth.access_token_secret = access_token_secret
     api = tweepy.API(auth)
-    listener = StreamListener()
 
-    # write the header to the cv if it doesnt have it already
+    print("Getting tweets")
+
+    end_time = time.time() + 3000
+    listener = StreamListener(end_time=end_time)
+    # write the header to the csv if it doesnt have it already
     write_header()
-    while not listener.exit:
-        tweepy.Stream(api.auth, listener=listener).sample()
-    print("Errored out: potentially hit rate limit.")
+    tweepy.Stream(api.auth, listener=listener).sample()
+
+    print("Done fetching tweets, exiting.")
     return 0
 
 
