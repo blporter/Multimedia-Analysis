@@ -15,6 +15,8 @@ print(consumer_secret)
 print(access_token)
 print(access_token_secret)
 
+
+
 fieldnames = ['user_id', 'stat_id', 'creation', 'tweet_body', 'name']
 csv_path = "data/tweets.csv"
 file_exists = os.path.isfile(csv_path)
