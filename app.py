@@ -69,7 +69,8 @@ def app():
 
     print("Getting tweets")
 
-    end_time = time.time() + 3000
+    # Should only run for 15 minutes at a time
+    end_time = time.time() + 60 * 15
     listener = StreamListener(end_time=end_time)
     # write the header to the csv if it doesnt have it already
     write_header()
