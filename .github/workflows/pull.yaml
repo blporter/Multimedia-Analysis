@@ -30,4 +30,4 @@ jobs:
         with:
           name: GitHub Actions Autocommitter
           branch: main
-          files: data/tweets.csv
+          files: data/tweets2.csv
