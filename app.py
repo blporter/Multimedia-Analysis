@@ -11,7 +11,7 @@ access_token = os.environ["TWITTER_ACCESS_TOKEN"]
 access_token_secret = os.environ["TWITTER_ACCESS_TOKEN_SECRET"]
 
 fieldnames = ['user_id', 'stat_id', 'creation', 'tweet_body', 'name']
-csv_path = "data/tweets3.csv"
+csv_path = "data/tweets4.csv"
 file_exists = os.path.isfile(csv_path)
 
 
