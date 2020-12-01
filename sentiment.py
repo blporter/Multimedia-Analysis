@@ -4,6 +4,7 @@ import csv
 import re
 import string
 import random
+import os
 
 from nltk.tokenize import TweetTokenizer
 from nltk.tag import pos_tag
@@ -96,16 +97,54 @@ def split_training_file():
                 positive_tweets.append(row['text'])
 
 
+def write_header(file_path):
+    with open(file_path, 'a') as csv_file:
+        writer = csv.DictWriter(csv_file, delimiter=',', fieldnames=['text', 'sentiment'])
+        # file doesn't exist yet, write a header
+        if not os.path.isfile(file_path):
+            writer.writeheader()
+
+
+def write_cache(file_path, data):
+    with open(file_path, 'a') as csv_file:
+        writer = csv.writer(csv_file)
+        for row in data:
+            writer.writerow(row)
+    print("Wrote to cache")
+
+
+def read_cache(file_path):
+    with open(file_path, newline='') as file:
+        reader = csv.reader(file)
+        content = []
+        for row in reader:
+            content.append(row)
+        return content
+
+
 def main():
     # download_nltk_libraries()
     analysis = SentimentAnalysis()
 
-    split_training_file()
+    # If the cleaned and tokenized data is already cached, pull from that
+    if os.path.isfile('cache/cleaned_training_data_negative_cache.csv'):
+        cleaned_positive_content = read_cache('cache/cleaned_training_data_positive_cache.csv')
+        cleaned_negative_content = read_cache('cache/cleaned_training_data_negative_cache.csv')
+        print("Read from cache")
+    else:
+        # Otherwise, clean and tokenize the data and then cache it.
+        split_training_file()
 
-    positive_tokens = analysis.tokenize_training_model(positive_tweets)
-    negative_tokens = analysis.tokenize_training_model(negative_tweets)
-    cleaned_positive_content = analysis.clean_content(positive_tokens)
-    cleaned_negative_content = analysis.clean_content(negative_tokens)
+        positive_tokens = analysis.tokenize_training_model(positive_tweets)
+        negative_tokens = analysis.tokenize_training_model(negative_tweets)
+        cleaned_positive_content = analysis.clean_content(positive_tokens)
+        cleaned_negative_content = analysis.clean_content(negative_tokens)
+
+        write_header('cache/cleaned_training_data_positive_cache.csv')
+        write_header('cache/cleaned_training_data_negative_cache.csv')
+        write_cache('cache/cleaned_training_data_positive_cache.csv', cleaned_positive_content)
+        write_cache('cache/cleaned_training_data_negative_cache.csv', cleaned_negative_content)
+
     positive_content_for_model = analysis.prepare_content_for_model(cleaned_positive_content)
     negative_content_for_model = analysis.prepare_content_for_model(cleaned_negative_content)
 
@@ -128,6 +167,14 @@ def main():
     print("Accuracy is:", classify.accuracy(classifier, test_data))
 
     print(classifier.show_most_informative_features(10))
+
+    tokens = analysis.tokenize_csv('data/tweets.csv')
+    cleaned_tokens = analysis.clean_content(tokens)
+    print(cleaned_tokens)
+
+    for tokens in cleaned_tokens:
+        print(classifier.classify(dict([token, True] for token in tokens)))
+
     return 0
 
 
