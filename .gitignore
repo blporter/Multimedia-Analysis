@@ -131,3 +131,6 @@ dmypy.json
 # IDE files
 .idea
 .DS_Store
+
+# This file is too big for Github
+data/training.1600000.processed.noemoticon.csv
