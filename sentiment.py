@@ -135,6 +135,7 @@ def read_cache(file_path):
 
 
 def fetch_featured_tweets():
+    print("Fetching featured tweets")
     analysis = SentimentAnalysis()
     tweets_to_return = []
     original_tweets = []
