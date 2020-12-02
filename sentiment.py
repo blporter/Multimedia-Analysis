@@ -13,10 +13,22 @@ from nltk.corpus import stopwords
 from nltk import classify
 from nltk import NaiveBayesClassifier
 
+slang_drug_word = ["mj", "weed", "marijuana", "heroin", "crack", "lit", "dank", "dope", "pot", "adderall", "oxy"]
 tweet_fields = ['user_id', 'stat_id', 'creation', 'tweet_body', 'name']
 training_fields = ['target', 'ids', 'date', 'flag', 'user', 'text']
 positive_tweets = []
 negative_tweets = []
+
+tweet_files = [
+    "tweets.csv",
+    "tweets2.csv",
+    "tweets3.csv",
+    "tweets4.csv",
+    "tweets5.csv",
+    "tweets6.csv",
+    "tweets7.csv",
+    "tweets8.csv",
+]
 
 
 class SentimentAnalysis:
@@ -122,6 +134,29 @@ def read_cache(file_path):
         return content
 
 
+def fetch_featured_tweets():
+    analysis = SentimentAnalysis()
+    tweets_to_return = []
+    original_tweets = []
+
+    for tweet_file in tweet_files:
+        if os.path.isfile("cache/" + tweet_file):
+            data = read_cache("cache/" + tweet_file)
+        else:
+            data = analysis.tokenize_csv("data/" + tweet_file)
+            write_cache("cache/" + tweet_file, data)
+
+        zipped_data = zip(data, read_cache("data/" + tweet_file))
+
+        for tokenized_tweet, og_tweet in zipped_data:
+            does_have_drugs_words = len([word for word in tokenized_tweet if word in slang_drug_word]) > 0
+            if does_have_drugs_words:
+                tweets_to_return.append(tokenized_tweet)
+                original_tweets.append(og_tweet[3])
+
+    return tweets_to_return, original_tweets
+
+
 def main():
     # download_nltk_libraries()
     analysis = SentimentAnalysis()
@@ -165,18 +200,25 @@ def main():
     classifier = NaiveBayesClassifier.train(train_data)
 
     print("Accuracy is:", classify.accuracy(classifier, test_data))
-
     print(classifier.show_most_informative_features(10))
 
-    tokens = analysis.tokenize_csv('data/tweets.csv')
-    cleaned_tokens = analysis.clean_content(tokens)
-    print(cleaned_tokens)
+    tokenized_tweets, og_tweets = fetch_featured_tweets()
+    assert len(tokenized_tweets) == len(og_tweets)
+    cleaned_drug_tokens = analysis.clean_content(tokenized_tweets)
 
-    for tokens in cleaned_tokens:
-        print(classifier.classify(dict([token, True] for token in tokens)))
-
+    print("Running network on real tweets")
+    for idx, tokens in enumerate(cleaned_drug_tokens):
+        original_tweet = og_tweets[idx]
+        token_dict = dict([token, True] for token in tokens)
+        try:
+            classified = classifier.classify(token_dict)
+            if classified == 'Positive':
+                print(original_tweet, "=>", classified)
+        except Exception:
+            print("exception")
     return 0
 
 
 if __name__ == '__main__':
     main()
+
