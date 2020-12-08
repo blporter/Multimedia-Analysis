@@ -1,3 +1,18 @@
+__author__ = 'Brooke Porter'
+__class__ = 'CSC 664 Multimedia Systems (Undergraduate)'
+__school__ = 'San Francisco State University'
+__professor__ = 'Dr. Rahul Singh'
+__file__ = 'sentiment.py'
+
+"""
+This file is used to parse the tweets retrieved from app.py into drug-related tweets with positive sentiment.
+It uses a Naive Bayes Classifier to train using an open-source Kaggle dataset from
+https://www.kaggle.com/kazanova/sentiment140 to determine whether a given tweet holds a positive or negative sentiment.
+First on the training dataset, it tokenizes and then lemmatizes and cleans the tweet bodies into base words, then
+again on the real data. The real data is also filtered by tweets relating to the list of drug words. Caching is
+implemented on the cleaned and lemmatized data to improve run times.
+"""
+
 import nltk
 import ssl
 import csv
@@ -13,12 +28,14 @@ from nltk.corpus import stopwords
 from nltk import classify
 from nltk import NaiveBayesClassifier
 
-slang_drug_word = ["mj", "weed", "marijuana", "heroin", "crack", "lit", "dank", "dope", "pot", "adderall", "oxy"]
+slang_drug_words = ["mj", "weed", "marijuana", "heroin", "crack", "lit", "dank", "dope", "pot", "adderall", "oxy"]
 tweet_fields = ['user_id', 'stat_id', 'creation', 'tweet_body', 'name']
 training_fields = ['target', 'ids', 'date', 'flag', 'user', 'text']
 positive_tweets = []
 negative_tweets = []
 
+# For the purposes of running and testing, the list of supplied csv files can be changed. These should be
+# in the data folder.
 tweet_files = [
     "tweets.csv",
     "tweets2.csv",
@@ -36,6 +53,12 @@ class SentimentAnalysis:
         super(SentimentAnalysis, self).__init__()
 
     def tokenize_csv(self, file_path):
+        """
+        Tokenize a csv file containing real tweets into arrays of words, given the path to the file. This
+        is used for real data, and uses the tweet_fields global list to determine the key of the tweet body.
+        :param file_path: The required file path to the csv being parsed.
+        :return: The array of arrays of string words.
+        """
         print("Tokenizing csv file")
         tokenizer = TweetTokenizer(strip_handles=True, reduce_len=True)
         with open(file_path, newline='') as file:
@@ -46,6 +69,12 @@ class SentimentAnalysis:
             return content
 
     def tokenize_training_model(self, tweets):
+        """
+        This function is called after splitting the training file into positive and negative sentiment halves.
+        It takes a list of tweet bodies and tokenizes them, returning the list of tokenized lists of tweets.
+        :param tweets: A list of positive or negative sentiment tweet bodies.
+        :return: A list of tokenized lists of words.
+        """
         print("Tokenizing training model")
         tokenizer = TweetTokenizer(strip_handles=True, reduce_len=True)
         content = []
@@ -54,6 +83,13 @@ class SentimentAnalysis:
         return content
 
     def clean_content(self, content):
+        """
+        This function cleans a given list of tokenized lists of words by lemmatizing words into their base
+        forms, and removing unnecessary data from the lists of words. HTTP links are removed, as well as @mentions
+        and common stop-list words.
+        :param content: The list of tokenized lists of words.
+        :return: The list of cleaned and lemmatized lists of words.
+        """
         print("Lemmatizing and cleaning")
         lemmatizer = WordNetLemmatizer()
         stop_words = stopwords.words("english")
@@ -61,7 +97,7 @@ class SentimentAnalysis:
         for row in content:
             cleaned_sentence = []
             for word, tag in pos_tag(row):
-                # remove links (http(s) and everything after)
+                # Remove links (http(s) and everything after)
                 word = re.sub('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+#]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', '',
                               word)
 
@@ -80,11 +116,20 @@ class SentimentAnalysis:
         return cleaned_content
 
     def prepare_content_for_model(self, cleaned_content):
+        """
+        This function converts the cleaned and lemmatized tweet tokens into a dict suitable for the model
+        to work with.
+        :param cleaned_content: The list of cleaned and lemmatized lists of words.
+        """
         for tokens in cleaned_content:
             yield dict([token, True] for token in tokens)
 
 
 def download_nltk_libraries():
+    """
+    This function should be used to download the nltk libraries for use with this program, if they are not
+    already downloaded. It only needs to be called once, and can be removed once downloading is complete.
+    """
     try:
         _create_unverified_https_context = ssl._create_unverified_context
     except AttributeError:
@@ -95,10 +140,13 @@ def download_nltk_libraries():
     print("NLTK download complete.")
 
 
-# My training dataset from Kaggle is too large to commit to github. Download the dataset from the following link:
-# https://www.kaggle.com/kazanova/sentiment140
-# and store it in the data folder.
 def split_training_file():
+    """
+    We use a csv file containing training data supplied from https://www.kaggle.com/kazanova/sentiment140.
+    The csv file is too large to commit to Github, and will likely require manual downloading from the above link.
+    This function splits that csv file into positive and negative sentiment halves, and uses the training_fields
+    list of keys to access the tweet body, adding it to the relevant positive or negative list.
+    """
     print("Splitting training file into positive and negative")
     with open('data/training.1600000.processed.noemoticon.csv', newline='', encoding='latin-1') as file:
         reader = csv.DictReader(file, fieldnames=training_fields)
@@ -110,14 +158,25 @@ def split_training_file():
 
 
 def write_header(file_path):
+    """
+    This is a generic function for writing the header for a csv file that does not yet have one.
+    :param file_path: The path to the csv file being written to.
+    """
     with open(file_path, 'a') as csv_file:
         writer = csv.DictWriter(csv_file, delimiter=',', fieldnames=['text', 'sentiment'])
-        # file doesn't exist yet, write a header
+        # The file doesn't exist yet, so write a header
         if not os.path.isfile(file_path):
             writer.writeheader()
 
 
 def write_cache(file_path, data):
+    """
+    This is a generic function for writing tokenized data to a csv file for caching. Cleaning and lemmatizing the
+    data is the most time consuming step in the program, so saving the data from that step makes the program
+    easier to work with.
+    :param file_path: The path where the csv file should be created.
+    :param data: The list of data to be written to the cache file.
+    """
     with open(file_path, 'a') as csv_file:
         writer = csv.writer(csv_file)
         for row in data:
@@ -126,6 +185,13 @@ def write_cache(file_path, data):
 
 
 def read_cache(file_path):
+    """
+    This is a generic function for reading tokenized data from a cached csv file. Cleaning and lemmatizing the
+    data is the most time consuming step in the program, so skipping that step by reading cached data makes the
+    program easier to work with.
+    :param file_path: The path to the cached csv file.
+    :return: The list of content from the cache.
+    """
     with open(file_path, newline='') as file:
         reader = csv.reader(file)
         content = []
@@ -135,6 +201,14 @@ def read_cache(file_path):
 
 
 def fetch_featured_tweets():
+    """
+    This is a helper function to handle the real tweet csv data. It first checks the global list of tweet files for
+    whether or not that file exists in the cache folder. If that file does exist in the cache, then it reads that
+    file and checks it against the slang_drug_words global list. Only tweets containing those tokenized words
+    are added to be returned. If the file does not exist in the cache, it is first tokenized and then added to said
+    cache.
+    :return: The tokenized and relevant tweets, as well as their original counterparts.
+    """
     print("Fetching featured tweets")
     analysis = SentimentAnalysis()
     tweets_to_return = []
@@ -150,7 +224,7 @@ def fetch_featured_tweets():
         zipped_data = zip(data, read_cache("data/" + tweet_file))
 
         for tokenized_tweet, og_tweet in zipped_data:
-            does_have_drugs_words = len([word for word in tokenized_tweet if word in slang_drug_word]) > 0
+            does_have_drugs_words = len([word for word in tokenized_tweet if word in slang_drug_words]) > 0
             if does_have_drugs_words:
                 tweets_to_return.append(tokenized_tweet)
                 original_tweets.append(og_tweet[3])
@@ -159,7 +233,10 @@ def fetch_featured_tweets():
 
 
 def main():
+    # This function call should be uncommented, if the nltk libraries have not yet been downloaded.
+    # Otherwise, it can be commented out.
     # download_nltk_libraries()
+
     analysis = SentimentAnalysis()
 
     # If the cleaned and tokenized data is already cached, pull from that
@@ -184,12 +261,14 @@ def main():
     positive_content_for_model = analysis.prepare_content_for_model(cleaned_positive_content)
     negative_content_for_model = analysis.prepare_content_for_model(cleaned_negative_content)
 
+    # The dataset needs to be converted to a dict applicable for training.
     positive_dataset = [(tweet_dict, "Positive")
                         for tweet_dict in positive_content_for_model]
 
     negative_dataset = [(tweet_dict, "Negative")
                         for tweet_dict in negative_content_for_model]
 
+    # The positive and negative sentiment halves to train off of should be combined again, and the order randomized.
     dataset = positive_dataset + negative_dataset
     random.shuffle(dataset)
 
@@ -203,6 +282,7 @@ def main():
     print("Accuracy is:", classify.accuracy(classifier, test_data))
     print(classifier.show_most_informative_features(10))
 
+    # After training, we can repeat the process using real data.
     tokenized_tweets, og_tweets = fetch_featured_tweets()
     assert len(tokenized_tweets) == len(og_tweets)
     cleaned_drug_tokens = analysis.clean_content(tokenized_tweets)
@@ -212,6 +292,7 @@ def main():
         original_tweet = og_tweets[idx]
         token_dict = dict([token, True] for token in tokens)
         try:
+            # We instruct our network to classify each tweet, and only output Positive sentiment tweets.
             classified = classifier.classify(token_dict)
             if classified == 'Positive':
                 print(original_tweet, "=>", classified)
