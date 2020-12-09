@@ -37,14 +37,14 @@ negative_tweets = []
 # For the purposes of running and testing, the list of supplied csv files can be changed. These should be
 # in the data folder.
 tweet_files = [
-    "tweets.csv"
-    # "tweets2.csv",
-    # "tweets3.csv",
-    # "tweets4.csv",
-    # "tweets5.csv",
-    # "tweets6.csv",
-    # "tweets7.csv",
-    # "tweets8.csv",
+    "tweets.csv",
+    "tweets2.csv",
+    "tweets3.csv",
+    "tweets4.csv",
+    "tweets5.csv",
+    "tweets6.csv",
+    "tweets7.csv",
+    "tweets8.csv",
 ]
 
 
