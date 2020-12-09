@@ -211,6 +211,7 @@ def fetch_featured_tweets():
     """
     print("Fetching featured tweets")
     analysis = SentimentAnalysis()
+    num_original_tweets = 0
     tweets_to_return = []
     original_tweets = []
 
@@ -224,12 +225,13 @@ def fetch_featured_tweets():
         zipped_data = zip(data, read_cache("data/" + tweet_file))
 
         for tokenized_tweet, og_tweet in zipped_data:
+            num_original_tweets += 1
             does_have_drugs_words = len([word for word in tokenized_tweet if word in slang_drug_words]) > 0
             if does_have_drugs_words:
                 tweets_to_return.append(tokenized_tweet)
                 original_tweets.append(og_tweet[3])
 
-    return tweets_to_return, original_tweets
+    return tweets_to_return, original_tweets, num_original_tweets
 
 
 def main():
@@ -283,11 +285,12 @@ def main():
     print(classifier.show_most_informative_features(10))
 
     # After training, we can repeat the process using real data.
-    tokenized_tweets, og_tweets = fetch_featured_tweets()
+    tokenized_tweets, og_tweets, num_original_tweets = fetch_featured_tweets()
     assert len(tokenized_tweets) == len(og_tweets)
     cleaned_drug_tokens = analysis.clean_content(tokenized_tweets)
 
     print("Running network on real tweets")
+    num_positives = 0
     for idx, tokens in enumerate(cleaned_drug_tokens):
         original_tweet = og_tweets[idx]
         token_dict = dict([token, True] for token in tokens)
@@ -295,9 +298,16 @@ def main():
             # We instruct our network to classify each tweet, and only output Positive sentiment tweets.
             classified = classifier.classify(token_dict)
             if classified == 'Positive':
+                num_positives += 1
                 print(original_tweet, "=>", classified)
         except Exception:
             print("exception")
+
+    print("\nTotal original tweets:", num_original_tweets)
+    print("Total drug related tweets:", len(cleaned_drug_tokens))
+    print("Percent of original tweets that are drug related:", len(cleaned_drug_tokens) / num_original_tweets)
+    print("Total number of positive sentiment tweets:", num_positives)
+    print("Percent of drug related tweets with positive sentiment:", num_positives / len(cleaned_drug_tokens))
 
     return 0
 
