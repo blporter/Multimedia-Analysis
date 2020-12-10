@@ -1,8 +1,6 @@
 ### Run Sentiment Analysis
 
-To run the sentiment analysis on the provided datasets, the NLTK libraries must be installed. In `sentiment.py`, the first line in `main()` should be uncommented: `download_nltk_libraries()`. I personally downloaded all of the available libraries.
-
-After this download has been completed, the line can be removed and the app should automatically run afterwards. In the case that it does not, it can be re-run after commenting out the line again. This is only necessary to download the libraries if they are not already present on the machine.
+To run the sentiment analysis on the provided datasets, the NLTK libraries must be installed. When running the program, it will prompt you for a "y" or "n" to whether or not you need to download them. I personally downloaded all of the available libraries.
 
 The csv files to be parsed should be included in the `data` folder, and listed in the `tweet_files` array at the top of the file. If those files have corresponding files in the `cache` folder, they will be automatically used instead of re-parsing the data. Otherwise, the program will run through parsing the data and then caching it for later use.
 

@@ -128,7 +128,7 @@ class SentimentAnalysis:
 def download_nltk_libraries():
     """
     This function should be used to download the nltk libraries for use with this program, if they are not
-    already downloaded. It only needs to be called once, and can be removed once downloading is complete.
+    already downloaded. It only needs to be done once.
     """
     try:
         _create_unverified_https_context = ssl._create_unverified_context
@@ -235,9 +235,9 @@ def fetch_featured_tweets():
 
 
 def main():
-    # This function call should be uncommented, if the nltk libraries have not yet been downloaded.
-    # Otherwise, it can be commented out.
-    # download_nltk_libraries()
+    should_download = input("Do you need to download nltk libraries? [y/n] ")
+    if should_download == "y":
+        download_nltk_libraries()
 
     analysis = SentimentAnalysis()
 
